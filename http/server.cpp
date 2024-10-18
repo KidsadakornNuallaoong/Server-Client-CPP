@@ -15,85 +15,6 @@
 #include <cstdint> // For std::int32_t, std::int64_t
 #include <nlohmann/json.hpp> // For JSON parsing
 
-#ifdef _WIN32
-    #include <thread>
-    #include <conio.h> // For _kbhit and _getch
-    
-    bool running = true;
-    bool trainning_display = false;
-
-    void checkInput() {
-        while (running) {
-            if (_kbhit()) {
-                char ch = _getch();
-                if (ch == 'q' || ch == 'Q') {
-                    running = false;
-                }
-
-                if (ch == 'd' || ch == 'D') {
-                    trainning_display = !trainning_display;
-                }
-            }
-        }
-    }
-
-#elif __linux__
-    #include <thread>
-    #include <atomic>
-    #include <unistd.h>
-    #include <fcntl.h>
-    #include <termios.h>
-
-    std::atomic<bool> running(true);
-    std::atomic<bool> trainning_display(false);
-
-    bool kbhit() {
-        struct termios oldt, newt;
-        int ch;
-        int oldf;
-
-        // Get the current terminal settings
-        tcgetattr(STDIN_FILENO, &oldt);
-        newt = oldt;
-        // Disable canonical mode and echo
-        newt.c_lflag &= ~(ICANON | ECHO);
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-        // Set stdin to non-blocking mode
-        oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-        fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-        // Check for input
-        ch = getchar();
-
-        // Restore terminal settings
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-        fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-        if(ch != EOF) {
-            ungetc(ch, stdin);
-            return true;
-        }
-
-        return false;
-    }
-
-    void checkInput() {
-        while (running) {
-            if (kbhit()) {
-                char ch = getchar();
-                if (ch == 'q' || ch == 'Q') {
-                    running = false;
-                }
-
-                if (ch == 'd' || ch == 'D') {
-                    trainning_display = !trainning_display;
-                }
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Small delay to avoid high CPU usage
-        }
-    }
-#endif
-
 const int PORT = 3000; // The port to listen on
 
 // ! Example of parsing JSON data manually
@@ -204,25 +125,6 @@ void handleClient(int client_socket) {
         return;
     }
     std::string data = content.substr(pos + delimiter.length());
-    // std::cout << data << std::endl;
-
-    // {
-    //     "username" : "Kim",
-    //     "password": "1234",
-    //     "data": {
-    //         "dat1": [1, 2, 3],
-    //         "dat2": "Hello World",
-    //         "dat3": 12345,
-    //         "dat4": {
-    //             "sibling1":"test",
-    //             "sibling2": 1234
-    //         },
-    //         "dat5": [
-    //             "Hello",
-    //             "World"
-    //         ]
-    //     }
-    // }
 
     // TODO Parse the JSON data username and password
     nlohmann::json json_data = nlohmann::json::parse(data);
@@ -263,13 +165,13 @@ int main() {
     int opt = 1;
     int addrlen = sizeof(address);
 
-    // Create socket file descriptor
+    // * Create socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         std::cerr << "Socket creation failed\n";
         return -1;
     }
 
-    // Attach socket to the port
+    // * Attach socket to the port
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt))) {
         std::cerr << "setsockopt failed\n";
         return -1;
@@ -279,13 +181,13 @@ int main() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    // Bind the socket to the address
+    // * Bind the socket to the address
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         std::cerr << "Bind failed\n";
         return -1;
     }
 
-    // Start listening for connections
+    // * Start listening for connections
     if (listen(server_fd, 3) < 0) {
         std::cerr << "Listen failed\n";
         return -1;
@@ -293,11 +195,8 @@ int main() {
 
     std::cout << "Server is running on port " << PORT << std::endl;
 
-    // Start a thread to check for user input
-    std::thread input_thread(checkInput);
-
-    // Main loop to accept connections
-    while (running) {
+    // * Main loop to accept connections
+    while (1) {
         if ((client_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
             std::cerr << "Accept failed\n";
             return -1;
@@ -307,10 +206,7 @@ int main() {
         handleClient(client_socket);
     }
 
-    // Wait for the input thread to finish
-    input_thread.join();
-
-    // Close the server socket
+    // * Close the server socket
     #ifdef _WIN32
     closesocket(server_fd);
     WSACleanup(); // Cleanup Winsock
