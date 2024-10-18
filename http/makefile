@@ -3,7 +3,6 @@
 
 GXX=g++
 CXXFLAGS=-Wall -g
-LDFLAGS=-lws2_32 -lcurl
 
 name=client
 
@@ -12,6 +11,7 @@ outdir=dist
 outfile=$(name)
 
 ifeq ($(OS),Windows_NT)
+LDFLAGS=-lws2_32 -lcurl
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)

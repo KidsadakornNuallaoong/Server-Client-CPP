@@ -12,18 +12,45 @@
 #include <arpa/inet.h> // For Linux
 #include <netinet/in.h>
 #endif
+#include <cstdint> // For std::int32_t, std::int64_t
 // #include "json.hpp"
 
 const int PORT = 3000; // The port to listen on
 
-std::string json_prase (std::string data, std::string key) {
-    std::string value;
-    size_t password_pos = data.find(key);
-    if (password_pos != std::string::npos) {
-        size_t start = data.find('"', data.find(':', password_pos)) + 1;
-        size_t end = data.find('"', start);
-        value = data.substr(start, end - start);
+template <typename T>
+T json_parse(std::string data, std::string key) {
+    T value;
+    size_t key_pos = data.find(key);
+
+    if (key_pos != std::string::npos) {
+        // Find the colon after the key
+        size_t start = data.find(':', key_pos) + 1;
+
+        // Skip any leading spaces
+        while (data[start] == ' ') {
+            start++;
+        }
+
+        if constexpr (std::is_same<T, std::string>::value) {
+            // If the value is expected to be a string
+            if (data[start] == '"') {
+                size_t end = data.find('"', start + 1);
+                value = data.substr(start + 1, end - start - 1);
+            }
+        } else if constexpr (std::is_arithmetic<T>::value) {
+            // If the value is expected to be a number
+            if (data[start] != '"') {
+                size_t end = data.find_first_of(",}", start);
+                std::string number_str = data.substr(start, end - start);
+                if constexpr (std::is_integral<T>::value) {
+                    value = std::stoll(number_str);  // Convert to integer type (e.g., int, long)
+                } else {
+                    value = std::stod(number_str);  // Convert to floating-point type (e.g., float, double)
+                }
+            }
+        }
     }
+
     return value;
 }
 
@@ -96,15 +123,16 @@ void handleClient(int client_socket) {
     std::string data = content.substr(pos + delimiter.length());
 
     // Manually parse the JSON data (hardcoded parsing)
-    std::string username, password;
+    std::string username;
+    int password;
 
     // Parse the JSON data
-    username = json_prase(data, "username");
-    password = json_prase(data, "password");
+    username = json_parse<std::string>(data, "username");
+    password = json_parse<int>(data, "password");
 
     // Print the parsed data
     std::cout << "Username: " << username << std::endl;
-    std::cout << "Password: " << password << std::endl;
+    std::cout << "Password: " << password-1 << std::endl;
 
     // Prepare an HTTP response
     std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nData received successfully!";
