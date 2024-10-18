@@ -3,7 +3,7 @@
 
 GXX=g++
 CXXFLAGS=-Wall -g
-
+ 
 name=client
 
 inputfile=$(name).cpp
