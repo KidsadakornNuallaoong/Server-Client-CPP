@@ -130,16 +130,10 @@ void handleClient(int client_socket) {
     nlohmann::json json_data = nlohmann::json::parse(data);
     std::string username = json_data["username"];
     std::string password = json_data["password"];
-    std::vector<int> dat1 = json_data["data"]["dat1"];
 
     // * Print the parsed data
     std::cout << "Username: " << username << std::endl;
     std::cout << "Password: " << password << std::endl;
-    std::cout << "Data1: ";
-    for (int i : dat1) {
-        std::cout << i << " ";
-    }
-    std::cout << std::endl;
 
     // * Prepare a simple HTTP response
     std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nData received successfully!";

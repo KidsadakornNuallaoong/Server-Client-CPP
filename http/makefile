@@ -24,6 +24,7 @@ clean:
 	del $(outfile).exe *.exe 2> nul
 	rmdir /s /q $(outdir) 2>nul || echo Directory not found
 else
+LDFLAGS=-lcurl
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
