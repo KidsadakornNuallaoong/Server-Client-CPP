@@ -2,16 +2,24 @@
 .PHONY: build run clean
 
 GXX=g++
-CXXFLAGS=-Wall -g
+CXXFLAGS=
  
-name=client
+file=server
 
-inputfile=$(name).cpp
+ifeq ($(OS), Windows_NT)
+	OS_sub=windows
+	Arch=x86_64
+else
+	OS_sub=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+	Arch=$(shell uname -m | tr '[:upper:]' '[:lower:]')
+endif
+
+inputfile=$(file).cpp
 outdir=dist
-outfile=$(name)
+outfile=$(file)_$(OS_sub)_$(Arch)
 
 ifeq ($(OS),Windows_NT)
-LDFLAGS=-lws2_32 -lcurl
+LDFLAGS=-lboost_json-mt -lws2_32
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
@@ -20,11 +28,14 @@ endif
 run: build
 	$(outdir)/$(outfile)
 	$(MAKE) --no-print-directory clean
+app:
+	$(MAKE) --no-print-directory build file=server
+	$(MAKE) --no-print-directory build file=client
 clean:
-	del $(outfile).exe *.exe 2> nul
+	del /f $(outfile).exe *.exe 2>nul || echo File not found
 	rmdir /s /q $(outdir) 2>nul || echo Directory not found
 else
-LDFLAGS=-lcurl
+LDFLAGS=-lcurl -lboost_system -lboost_json
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
@@ -33,6 +44,9 @@ endif
 run: build
 	./$(outdir)/$(outfile)
 	$(MAKE) --no-print-directory clean
+app:
+	$(MAKE) --no-print-directory build file=server
+	$(MAKE) --no-print-directory build file=client
 clean:
 	rm -f $(outfile) *.exe
 	rm -rf $(outdir)

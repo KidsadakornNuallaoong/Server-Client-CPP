@@ -6,12 +6,13 @@
 #include <cstdio>
 #include <unistd.h> // For close() (Linux)
 #ifdef _WIN32
-#include <winsock2.h> // For Windows
-#include <ws2tcpip.h> // For Windows
+#include <winsock2.h> // For Windows OS
+#include <ws2tcpip.h> // For Windows OS
 #else
-#include <arpa/inet.h> // For Linux
-#include <netinet/in.h>
+#include <sys/socket.h> // For Linux OS
+#include <netinet/in.h> // For Linux OS
 #endif
+
 #include <cstdint> // For std::int32_t, std::int64_t
 #include <nlohmann/json.hpp> // For JSON parsing
 
@@ -116,7 +117,7 @@ void handleClient(int client_socket) {
     // Print the received data
     // std::cout << "Received request:\n" << buffer << std::endl;
 
-    // TODO Parse content from the request
+    // Parse content from the request
     std::string content(buffer);
     std::string delimiter = "\r\n\r\n";
     size_t pos = content.find(delimiter);
@@ -126,21 +127,47 @@ void handleClient(int client_socket) {
     }
     std::string data = content.substr(pos + delimiter.length());
 
-    // TODO Parse the JSON data username and password
-    nlohmann::json json_data = nlohmann::json::parse(data);
-    std::string username = json_data["username"];
-    std::string password = json_data["password"];
+    // Check if the request is a GET request
+    if (content.find("GET") == 0) {
+        // Determine the requested path
+        size_t path_start = content.find(' ') + 1;
+        size_t path_end = content.find(' ', path_start);
+        std::string path = content.substr(path_start, path_end - path_start);
 
-    // * Print the parsed data
-    std::cout << "Username: " << username << std::endl;
-    std::cout << "Password: " << password << std::endl;
+        if (path == "/") {
+            // Handle GET request for "/"
+            std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, this is the root path!";
+            send(client_socket, response.c_str(), response.length(), 0);
+        } else if (path == "/json") {
+            // Handle GET request for "/json"
+            nlohmann::json json_response = {
+                {"message", "Hello, this is a JSON response from cpp server!"},
+                {"number", 42},
+                {"array", {1, 2, 3}}
+            };
+            std::string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + json_response.dump();
+            send(client_socket, response.c_str(), response.length(), 0);
+        } else {
+            // Handle unknown path
+            std::string response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nPath not found!";
+            send(client_socket, response.c_str(), response.length(), 0);
+        }
+    } else {
+        // Handle POST request
+        // Parse the JSON data username and password
+        nlohmann::json json_data = nlohmann::json::parse(data);
+        std::string username = json_data["username"];
+        std::string password = json_data["password"];
 
-    // * Prepare a simple HTTP response
-    std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nData received successfully!";
-    
-    // TODO Send the response back to the client
-    send(client_socket, response.c_str(), response.length(), 0);
-    
+        // Print the parsed data
+        std::cout << "Username: " << username << std::endl;
+        std::cout << "Password: " << password << std::endl;
+
+        // Prepare a simple HTTP response
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nData received successfully!";
+        send(client_socket, response.c_str(), response.length(), 0);
+    }
+
     #ifdef _WIN32
     closesocket(client_socket); // Close the client socket
     #else
