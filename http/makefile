@@ -10,8 +10,8 @@ ifeq ($(OS), Windows_NT)
 	OS_sub=windows
 	Arch=x86_64
 else
-	OS_sub=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-	Arch=$(shell uname -m | tr '[:upper:]' '[:lower:]')
+	OS_sub=linux
+	Arch=x86_64
 endif
 
 inputfile=$(file).cpp

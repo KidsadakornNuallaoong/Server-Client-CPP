@@ -10,8 +10,8 @@ ifeq ($(OS), Windows_NT)
 	OS_sub=windows
 	Arch=x86_64
 else
-	OS_sub=$(shell uname -s | tr '[:upper:]' '[:lower:]')
-	Arch=$(shell uname -m | tr '[:upper:]' '[:lower:]')
+	OS_sub=linux
+	Arch=x86_64
 endif
 
 inputfile=$(file).cpp
@@ -19,7 +19,7 @@ outdir=dist
 outfile=$(file)_$(OS_sub)_$(Arch)
 
 ifeq ($(OS),Windows_NT)
-LDFLAGS=-lws2_32 -lcurl
+LDFLAGS=-lws2_32 -lssl -lcrypto
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
@@ -35,7 +35,7 @@ clean:
 	del /f $(outfile).exe *.exe 2>nul || echo File not found
 	rmdir /s /q $(outdir) 2>nul || echo Directory not found
 else
-LDFLAGS=-lcurl
+LDFLAGS=-lssl -lcrypto
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)

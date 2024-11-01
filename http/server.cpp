@@ -152,7 +152,10 @@ void handleClient(int client_socket) {
             std::string response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nPath not found!";
             send(client_socket, response.c_str(), response.length(), 0);
         }
-    } else {
+    }
+
+    // Check if the request is a POST request
+    if (content.find("POST") == 0) {
         // Handle POST request
         // Parse the JSON data username and password
         nlohmann::json json_data = nlohmann::json::parse(data);
@@ -164,7 +167,7 @@ void handleClient(int client_socket) {
         std::cout << "Password: " << password << std::endl;
 
         // Prepare a simple HTTP response
-        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nData received successfully!";
+        std::string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\nData received successfully!";
         send(client_socket, response.c_str(), response.length(), 0);
     }
 
