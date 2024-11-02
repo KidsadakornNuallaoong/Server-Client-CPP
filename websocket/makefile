@@ -19,7 +19,7 @@ outdir=dist
 outfile=$(file)_$(OS_sub)_$(Arch)
 
 ifeq ($(OS),Windows_NT)
-LDFLAGS=-lws2_32 -lssl -lcrypto
+LDFLAGS=-lws2_32 -lssl -lcurl -lpthread
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
@@ -35,7 +35,7 @@ clean:
 	del /f $(outfile).exe *.exe 2>nul || echo File not found
 	rmdir /s /q $(outdir) 2>nul || echo Directory not found
 else
-LDFLAGS=-lssl -lcrypto
+LDFLAGS=-lssl -lcrypto -lcurl -lpthread -lboost_system
 build:
 ifeq (,$(wildcard $(outdir)))
 	mkdir $(outdir)
